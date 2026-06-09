@@ -40,20 +40,20 @@ Each test followed the same disciplined sequence:
 6. Read the captured Event 4104 `ScriptBlockText` directly to verify whether the `New-LocalUser` string is present.
 7. Remove all test accounts (cleanup).
 
-## Step 1 — Baseline Logging State (Disabled)
+## Step 1 Baseline Logging State (Disabled)
 
 The registry key for Script Block Logging did not exist, confirming logging was off at the start. This establishes a clean before-state.
 
 ![Logging disabled baseline](screenshots/01_scriptblock_logging_disabled_baseline.png)
 
-## Step 2 — Enable Script Block Logging
+## Step 2 Enable Script Block Logging
 
 The policy registry key was created and `EnableScriptBlockLogging` was set to `1`, then verified.
 
 ![Registry key created](screenshots/02_scriptblock_logging_key_created.png)
 ![Logging enabled confirmed](screenshots/03_scriptblock_logging_enabled_confirmed.png)
 
-## Step 3 — Baseline (Control): New-LocalUser cmdlet
+## Step 3 Baseline (Control): New-LocalUser cmdlet
 
 ```powershell
 New-LocalUser -Name "test_baseline" -NoPassword
@@ -66,7 +66,7 @@ The account was created and enabled. The corresponding Event ID 4104 captured th
 ![Baseline user created](screenshots/04_baseline_newlocaluser_created.png)
 ![Baseline 4104 logged with string](screenshots/05_baseline_4104_newlocaluser_logged.png)
 
-## Step 4 — Evasion 1: ADSI / WinNT Provider
+## Step 4 Evasion 1: ADSI / WinNT Provider
 
 ```powershell
 $user = [ADSI]"WinNT://$env:COMPUTERNAME"; $newuser = $user.Create("User","test_adsi"); $newuser.SetInfo()
@@ -79,7 +79,7 @@ The account `test_adsi` was created, and `Get-LocalUser` confirms both it and th
 
 ### Methodology Note (important)
 
-The first attempt to verify evasion counted Event 4104 entries returned by a substring search for `New-LocalUser`. This approach was flawed: each search command itself contains the string `New-LocalUser` (inside the `Where-Object` filter), and Script Block Logging logs the search command too. The result was self-contamination — the search was partly detecting itself rather than the user-creation commands. The screenshots below show the contaminated results, where repeated searches added their own entries to the count.
+The first attempt to verify evasion counted Event 4104 entries returned by a substring search for `New-LocalUser`. This approach was flawed: each search command itself contains the string `New-LocalUser` (inside the `Where-Object` filter), and Script Block Logging logs the search command too. The result was self-contamination the search was partly detecting itself rather than the user-creation commands. The screenshots below show the contaminated results, where repeated searches added their own entries to the count.
 
 ![Contaminated search attempt](screenshots/08_contaminated_search_newlocaluser.png)
 ![Contamination demonstrated by growing hit count](screenshots/10_contamination_demonstrated.png)
@@ -100,11 +100,11 @@ $user = [ADSI]"WinNT://$env:COMPUTERNAME"; $newuser = $user.Create("User","test_
 
 The command was fully logged (Event ID 4104, 5:36:54 PM) but contains no instance of the string `New-LocalUser`. The rule does not match.
 
-**Result: NOT DETECTED — confirmed evasion.**
+**Result: NOT DETECTED confirmed evasion.**
 
 ![ADSI logged text contains no New-LocalUser](screenshots/11_adsi_message_content_no_newlocaluser.png)
 
-## Step 5 — Evasion 2: net user
+## Step 5 Evasion 2: net user
 
 ```powershell
 net user test_netuser <password> /add
@@ -118,12 +118,12 @@ net user test_netuser <password> /add
 
 The command was logged (Event ID 4104, 5:46:51 PM) and again contains no instance of `New-LocalUser`. The rule does not match.
 
-**Result: NOT DETECTED — confirmed evasion (see Limitations).**
+**Result: NOT DETECTED confirmed evasion (see Limitations).**
 
 ![net user created](screenshots/12_evasion_netuser_created.png)
 ![net user logged text contains no New-LocalUser](screenshots/13_netuser_message_content_no_newlocaluser.png)
 
-## Step 6 — Cleanup
+## Step 6 Cleanup
 
 All three test accounts were removed and removal was verified (empty result).
 
